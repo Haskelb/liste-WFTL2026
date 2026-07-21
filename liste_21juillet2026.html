@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>FMTL — Suivi des participants</title>
+<style>
+  :root{
+    --ink:#1c2b2e;
+    --paper:#f6f3ec;
+    --card:#ffffff;
+    --line:#e2ddd0;
+    --teal:#1f5a56;
+    --teal-deep:#123c39;
+    --gold:#b8863b;
+    --sky:#5a8a9e;
+    --muted:#7c7568;
+    --ok:#2f7a4f;
+    --warn:#b8863b;
+    --no:#a8493a;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Iowan Old Style','Georgia',serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .sans{font-family:'Helvetica Neue',Arial,sans-serif;}
+
+  header{
+    padding:38px 32px 26px;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(circle at 90% -10%, rgba(90,138,158,0.18), transparent 55%),
+      var(--paper);
+  }
+  .eyebrow{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    font-size:11.5px;
+    color:var(--teal);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  h1{
+    margin:0 0 6px;
+    font-size:clamp(26px,3.4vw,38px);
+    font-weight:400;
+    letter-spacing:-0.01em;
+    color:var(--teal-deep);
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:15px;
+    max-width:640px;
+    line-height:1.5;
+  }
+
+  .stats{
+    display:flex;
+    gap:14px;
+    margin-top:22px;
+    flex-wrap:wrap;
+  }
+  .stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 18px;
+    min-width:130px;
+  }
+  .stat .num{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--teal-deep);
+  }
+  .stat .lbl{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    margin-top:2px;
+  }
+
+  .controls{
+    padding:22px 32px 0;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    position:sticky;
+    top:0;
+    background:var(--paper);
+    z-index:5;
+    padding-bottom:14px;
+  }
+  .tab{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    padding:10px 18px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{ border-color:var(--teal); transform:translateY(-1px); }
+  .tab .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+  .tab[data-view="horaires"] .dot{background:var(--sky);}
+  .tab[data-view="finances"] .dot{background:var(--gold);}
+  .tab[data-view="hebergement"] .dot{background:var(--teal);}
+  .tab[data-view="profils"] .dot{background:#8a5a8f;}
+  .tab[data-view="autofinance"] .dot{background:#a8493a;}
+  .tab[data-view="tous"] .dot{background:var(--teal-deep);}
+  .tab.active{
+    background:var(--teal-deep);
+    color:#fdfbf6;
+    border-color:var(--teal-deep);
+  }
+  .tab.active .dot{background:#fdfbf6;}
+
+  .search{
+    margin-left:auto;
+    position:relative;
+  }
+  .search input{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:10px 14px 10px 34px;
+    border-radius:999px;
+    font-size:13.5px;
+    width:220px;
+    outline:none;
+  }
+  .search input:focus{border-color:var(--teal);}
+  .search::before{
+    content:"⌕";
+    position:absolute;
+    left:13px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    font-size:15px;
+  }
+
+  main{ padding:20px 32px 60px; }
+
+  .view-caption{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    color:var(--muted);
+    margin:4px 0 16px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  thead th{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    background:#fbf9f3;
+  }
+  tbody td{
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    font-size:14.5px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fbf9f3;}
+  .name{font-weight:600; color:var(--teal-deep);}
+  .name .first{font-weight:400; color:var(--ink);}
+
+  .pill{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 11px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:600;
+  }
+  .pill.oui{ background:#e7f2ea; color:var(--ok); }
+  .pill.non{ background:#f3ece9; color:var(--no); }
+  .pill.autre{ background:#f5efe0; color:var(--warn); }
+  .pill::before{ content:"●"; font-size:8px; }
+  .muted-cell{ color:var(--muted); font-style:italic; font-size:13.5px; }
+
+  .empty{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:14px;
+  }
+
+  footer{
+    padding:18px 32px 40px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  @media (max-width:720px){
+    header,.controls,main,footer{padding-left:18px;padding-right:18px;}
+    .search{margin-left:0; width:100%;}
+    .search input{width:100%;}
+    table, thead, tbody, tr{display:block;}
+    thead{display:none;}
+    tbody tr{
+      border:1px solid var(--line);
+      border-radius:10px;
+      margin-bottom:10px;
+      padding:8px 4px;
+    }
+    tbody td{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #f0ece2;
+      padding:8px 12px;
+    }
+    tbody td::before{
+      content:attr(data-label);
+      font-weight:600;
+      color:var(--muted);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+      flex:0 0 auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow sans">FMTL · Juillet 2026</div>
+  <h1>Suivi des participants</h1>
+  <div class="subtitle sans">Cliquez sur un bouton pour ne voir que ce qui vous intéresse — horaires, finances, hébergement, ou les profils (institution, pays, courriel).</div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="controls">
+  <button class="tab active" data-view="tous"><span class="dot"></span>Tous</button>
+  <button class="tab" data-view="horaires"><span class="dot"></span>Horaires (arrivée/départ)</button>
+  <button class="tab" data-view="finances"><span class="dot"></span>Finances</button>
+  <button class="tab" data-view="hebergement"><span class="dot"></span>Hébergement</button>
+  <button class="tab" data-view="profils"><span class="dot"></span>Profils</button>
+  <button class="tab" data-view="autofinance"><span class="dot"></span>Autofinancement</button>
+  <div class="search">
+    <input type="text" id="searchInput" placeholder="Chercher un nom…">
+  </div>
+</div>
+
+<main>
+  <div class="view-caption sans" id="caption"></div>
+  <table>
+    <thead><tr id="headRow"></tr></thead>
+    <tbody id="bodyRows"></tbody>
+  </table>
+  <div class="empty sans" id="emptyMsg" style="display:none;">Aucun participant ne correspond à cette recherche.</div>
+</main>
+
+<footer>FMTL — Liste des participants · Informations de voyage · Juin 2026</footer>
+
+<script>
+const DATA = [
+{"Nom": "Abraham", "Prénom": "Kochurani", "Arrivée": "29/07/2026", "HArr": "12:15", "Départ": "09/08/2026", "HDep": "13:30", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "kochuabraham@gmail.com", "Institution": "Chercheuse indépendante", "Pays": "Inde", "Role": "Chercheur·e", "Panel": "8, 9"},
+{"Nom": "Akintola", "Prénom": "Lukmon", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "", "Institution": "ANAP", "Pays": "Nigeria", "Role": "", "Panel": "9"},
+{"Nom": "Aloukou", "Prénom": "Frédérique", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Local", "Presentation": "Non", "Heberge": "Non", "Courriel": "contact@afriquedecide.org", "Institution": "Entrepreneur agricole", "Pays": "Bénin", "Role": "Indépendant·e", "Panel": "4"},
+{"Nom": "Alves Brito", "Prénom": "Alan", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "alves.brito.a@gmail.com ", "Institution": "Professeur, Université Fédérale de Rio Grande do Sul", "Pays": "Brésil", "Role": "Professeur·e", "Panel": "4"},
+{"Nom": "Barboza de Souza", "Prénom": "Carlos Frederico", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui (hébergement 4 jours)", "SoiMeme": "", "Presentation": "", "Heberge": "Oui", "Courriel": "", "Institution": "", "Pays": "", "Role": "", "Panel": ""},
+{"Nom": "Barrera Rodriguez", "Prénom": "Rosa", "Arrivée": "27/07/2026", "HArr": "14:05", "Départ": "10/08/2026", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "", "Institution": "", "Pays": "", "Role": "", "Panel": ""},
+{"Nom": "Blasi", "Prénom": "Márcia", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "coisasdogenero@est.edu.br", "Institution": "Représentante, Gênero e Religião", "Pays": "Brésil", "Role": "Indépendant·e", "Panel": "8"},
+{"Nom": "Brunelli", "Prénom": "Gilio", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "gilio@sympatico.ca", "Institution": "Professeur, Université de Sherbrooke; Représentant du FMTL au FSM", "Pays": "Canada", "Role": "Professeur·e", "Panel": "9"},
+{"Nom": "Canet", "Prénom": "Raphaël", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "rcanet@cvm.qc.ca", "Institution": "Professeur, CEGEP du Vieux Montréal", "Pays": "Canada", "Role": "Professeur·e", "Panel": "7"},
+{"Nom": "Carpentier", "Prénom": "Johanne", "Arrivée": "27/07/2026", "HArr": "14:05", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "", "Heberge": "", "Courriel": "carpentierjohanne@hotmail.com", "Institution": "Activiste", "Pays": "Canada", "Role": "", "Panel": "8"},
+{"Nom": "Churu", "Prénom": "Wairimu Beatrice", "Arrivée": "29/07/2026", "HArr": "12:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "beatrice.churu@gmail.com", "Institution": "Senior Lecturer, Tangaza University", "Pays": "Kenya", "Role": "Professeur·e", "Panel": "10"},
+{"Nom": "Couture", "Prénom": "Denise", "Arrivée": "27/07/2026", "HArr": "14:05", "Départ": "10/08/2026", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "denise.couture.2@umontreal.ca", "Institution": "Professeure associée, Université de Montréal; Secrétaire exécutive du FMTL", "Pays": "Canada", "Role": "Professeur·e", "Panel": "7, 8, 10"},
+{"Nom": "da Silva Gonçalves", "Prénom": "Elimara", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "elimara.goncalves@unipampa.edu.br", "Institution": "Responsable de la division des mesures d'action positive de la PROCADI", "Pays": "Brésil", "Role": "Indépendant·e", "Panel": "4"},
+{"Nom": "da Silva Lima Martins", "Prénom": "Claudete", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "claudetemartins@unipampa.edu.br", "Institution": "Représentante, Projeto Maternagem Unipampa", "Pays": "Brésil", "Role": "Indépendant·e", "Panel": "8"},
+{"Nom": "de Lima Silva", "Prénom": "Silvia Regina", "Arrivée": "29/07/2026", "HArr": "21:50", "Départ": "10/08/2026", "HDep": "00:20", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "silviareginacursos@gmail.com", "Institution": "Professeure, Universidad Nacional de Costa Rica; Directrice, DEI", "Pays": "Costa Rica", "Role": "Professeur·e", "Panel": "6"},
+{"Nom": "Dettloff", "Prénom": "Dean", "Arrivée": "29/07/2026", "HArr": "21:50", "Départ": "09/08/2026", "HDep": "00:20", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "ddettloff@devp.org", "Institution": "Officier de recherche, Développement et Paix – Caritas Canada; Professeur adjoint, ICS Toronto", "Pays": "Canada", "Role": "Professeur·e", "Panel": "5"},
+{"Nom": "Dian", "Prénom": "Felicia", "Arrivée": "29/07/2026", "HArr": "12:15", "Départ": "10/08/2026", "HDep": "13:30", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "dianravenska@gmail.com", "Institution": "Représentante, Asian Sacred Wisdom", "Pays": "Asie", "Role": "Indépendant·e", "Panel": "8"},
+{"Nom": "Edjekpoto", "Prénom": "Sylvestre", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Local", "Presentation": "Non", "Heberge": "Non", "Courriel": "sylvestre.edjekpoto@afriquedecide.org", "Institution": "Activiste; Directeur scientifique, Institut Afrique Décide", "Pays": "Bénin", "Role": "Activiste", "Panel": "4"},
+{"Nom": "Getui", "Prénom": "Mary N.", "Arrivée": "29/07/2026", "HArr": "12:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "mngetui@yahoo.com", "Institution": "Professeure, Catholic University of Eastern Africa", "Pays": "Kenya", "Role": "Professeur·e", "Panel": "1"},
+{"Nom": "Ghale", "Prénom": "Titi Maya", "Arrivée": "30/07/2026", "HArr": "19:40", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "titimayaghale@gmail.com", "Institution": "Activiste, étudiante en droit", "Pays": "Népal", "Role": "Étudiant·e", "Panel": "5, 10"},
+{"Nom": "Gnana", "Prénom": "Patrick", "Arrivée": "30/07/2026", "HArr": "12:15", "Départ": "09/08/2026", "HDep": "13:30", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "gnanapat@gmail.com", "Institution": "Professeur, University of Madras (retraité)", "Pays": "Inde", "Role": "Professeur·e", "Panel": "6"},
+{"Nom": "Goussikindey", "Prénom": "Eugene", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "", "Heberge": "", "Courriel": "eugenedidier@yahoo.com", "Institution": "Chercheur, Centre Jésuite de Recherche et de Créativité, Cotonou", "Pays": "Bénin", "Role": "Chercheur·e", "Panel": "10"},
+{"Nom": "Gularte", "Prénom": "José Luiz Domingues", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "gularte.jld@gmail.com", "Institution": "Musicien / Artiste / Chercheur indépendant", "Pays": "Brésil", "Role": "Chercheur·e", "Panel": "4"},
+{"Nom": "Haskel-Martinez", "Prénom": "Brandon", "Arrivée": "28/07/2026", "HArr": "03:15", "Départ": "10/08/2026", "HDep": "04:15", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "", "Institution": "", "Pays": "", "Role": "", "Panel": ""},
+{"Nom": "Houssou Gandonou", "Prénom": "Fifamè Fidèle", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "general.secretary@biblesociety-benin.org", "Institution": "Professeure, Université protestante d'Afrique de l'Ouest; Secrétaire générale, Alliance Biblique du Bénin", "Pays": "Bénin", "Role": "Professeur·e", "Panel": "3, 8"},
+{"Nom": "Huard", "Prénom": "Samuel", "Arrivée": "29/07/2026", "HArr": "21:50", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "samuel.huard@mail.utoronto.ca", "Institution": "Doctorant, Université de Toronto", "Pays": "Canada", "Role": "Étudiant·e", "Panel": "6"},
+{"Nom": "Inczauskis", "Prénom": "David", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "dinczauskis@luc.edu", "Institution": "Prêtre jésuite; Doctorant en philosophie, Loyola University Chicago", "Pays": "États-Unis", "Role": "Étudiant·e", "Panel": "5"},
+{"Nom": "Jamba António João", "Prénom": "Emiliano", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "emilianojamba1@gmail.com", "Institution": "Théologien; Doctorant en histoire, UNICAMP", "Pays": "Brésil / Angola", "Role": "Étudiant·e", "Panel": "6"},
+{"Nom": "Jamir", "Prénom": "Shiluinla", "Arrivée": "29/07/2026", "HArr": "21:15", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "sjamir37@gmail.com", "Institution": "Chercheuse indépendante; Research Affiliate, Abo Akademi University", "Pays": "Inde", "Role": "Chercheur·e", "Panel": "2"},
+{"Nom": "Kanza", "Prénom": "Anastasie Lydia", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Locale", "Presentation": "Non", "Heberge": "Non", "Courriel": "anastasielydia@gmail.com", "Institution": "Docteure en Écritures Saintes, Catholic University of Eastern Africa", "Pays": "Kenya", "Role": "Indépendant·e", "Panel": "3"},
+{"Nom": "Koutohou", "Prénom": "Noel Jahway", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Non", "Heberge": "Non", "Courriel": "", "Institution": "Famille Jah (Jaw Jah); Centre d'expérimentation et de valorisation de l'agroécologie (CEVASTE)", "Pays": "Bénin", "Role": "", "Panel": "9"},
+{"Nom": "Kronbauer", "Prénom": "Selenir", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "10/08/2026", "HDep": "04:15", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "selenir@est.edu.br", "Institution": "Professeure, Faculdades EST", "Pays": "Brésil", "Role": "Professeur·e", "Panel": "4, 8, 9"},
+{"Nom": "Kuzma", "Prénom": "Cesar", "Arrivée": "29/07/2026", "HArr": "21:50", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "cesarkuzma@gmail.com", "Institution": "Professeur, PUCPR; Coordonnateur exécutif entrant du FMTL", "Pays": "Brésil", "Role": "Professeur·e", "Panel": "10"},
+{"Nom": "Kèbé", "Prénom": "Ibrahima", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "ibrahima.kebe@umontreal.ca", "Institution": "Doctorant, Institut d'études religieuses, Université de Montréal", "Pays": "Sénégal / Canada", "Role": "Étudiant·e", "Panel": "1"},
+{"Nom": "Loko", "Prénom": "Alida", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "alida.loko@yahoo.com", "Institution": "Représentante, Cercle des femmes théologiennes du Bénin", "Pays": "Bénin", "Role": "Indépendant·e", "Panel": "8"},
+{"Nom": "Longkumer", "Prénom": "Bendanglemla", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "bendangalem@gmail.com", "Institution": "Professeure associée, Pasifika Communities University", "Pays": "Fidji / Inde", "Role": "Professeur·e", "Panel": "2"},
+{"Nom": "Makena", "Prénom": "Jackie", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Non", "SoiMeme": "Oui", "Presentation": "Non", "Heberge": "Oui", "Courriel": "jacklinemakenamutuma7@gmail.com", "Institution": "Chargée de cours, St. Paul's University; Doctorante, University of the Western Cape", "Pays": "Kenya", "Role": "Étudiant·e", "Panel": "5"},
+{"Nom": "Mendoza-Álvarez", "Prénom": "Carlos", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "10/08/2026", "HDep": "04:15", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "mendocino.mx@gmail.com", "Institution": "Chercheur indépendant; Membre du CI du FMTL", "Pays": "Mexique", "Role": "Chercheur·e", "Panel": "2"},
+{"Nom": "Morales Moreno", "Prénom": "Claudia", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "", "SoiMeme": "", "Presentation": "", "Heberge": "", "Courriel": "caludiamoralesmoreno97@gmail.com", "Institution": "Représentante, Juventudes Cristianas", "Pays": "Cuba", "Role": "Indépendant·e", "Panel": "8"},
+{"Nom": "Mwaura", "Prénom": "Philomena Njeri", "Arrivée": "29/07/2026", "HArr": "12:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "philomenanjeri.m@gmail.com", "Institution": "Professeure associée, Kenyatta University", "Pays": "Kenya", "Role": "Professeur·e", "Panel": "1, 8"},
+{"Nom": "Ndongala Maduku", "Prénom": "Ignace", "Arrivée": "27/07/2026", "HArr": "14:05", "Départ": "10/08/2026", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "ignace.ndongala.maduku@umontreal.ca", "Institution": "Professeur agrégé, Université de Montréal", "Pays": "Canada / RDC", "Role": "Professeur·e", "Panel": "1, 3, 10"},
+{"Nom": "Ntumba Tshiambi", "Prénom": "Joseph", "Arrivée": "29/07/2026", "HArr": "21:15", "Départ": "09/08/2026", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "joseph.ntumba@uclouvain.be", "Institution": "Chercheur indépendant; Docteur en théologie, UCLouvain", "Pays": "RDC / Belgique", "Role": "Chercheur·e", "Panel": "3"},
+{"Nom": "Obama", "Prénom": "Célestin", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Oui", "Heberge": "À confirmer", "Courriel": "obamcel@yahoo.fr", "Institution": "Chercheur indépendant", "Pays": "Cameroun / Belgique", "Role": "Chercheur·e", "Panel": "3"},
+{"Nom": "Ortíz Cotte", "Prénom": "Alejandro", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "jesus.ortiz@iberopuebla.mx", "Institution": "Coordinateur de l'innovation en services de l'information, Universidad Ibericoamerica; Coordonnateur général, Comité exécutif d'Amerindia Continental", "Pays": "Mexique", "Role": "Indépendant·e", "Panel": "5"},
+{"Nom": "Pacheco", "Prénom": "Ronilso", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "ronilsops@gmail.com", "Institution": "Chercheur; Directeur, ISER (Institut d'études sur la religion)", "Pays": "Brésil", "Role": "Chercheur·e", "Panel": "1"},
+{"Nom": "Panotto", "Prénom": "Nicolás", "Arrivée": "29/07/2026", "HArr": "21:15", "Départ": "08/08/2026", "HDep": "22:00", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "nicolaspanotto@gmail.com", "Institution": "Professeur, Universidad Arturo Prat; Membre du CI du FMTL", "Pays": "Chili", "Role": "Professeur·e", "Panel": "10"},
+{"Nom": "Roussel", "Prénom": "Jean-François", "Arrivée": "27/07/2026", "HArr": "14:05", "Départ": "10/08/2026", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "jean-francois.roussel@umontreal.ca", "Institution": "Professeur, Université de Montréal; Coordonnateur exécutif sortant du FMTL", "Pays": "Canada", "Role": "Professeur·e", "Panel": "2, 10"},
+{"Nom": "Susin", "Prénom": "Luiz Carlos", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "lcsusin@gmail.com", "Institution": "Professeur, Pontifícia Universidade Católica de Porto Alegre", "Pays": "Brésil", "Role": "Professeur·e", "Panel": "7"},
+{"Nom": "Tutty", "Prénom": "David", "Arrivée": "30/07/2026", "HArr": "12:15", "Départ": "08/08/2026", "HDep": "13:30", "FMTL": "Non", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "dtutty@twb.catholic.org.au", "Institution": "Directeur exécutif, Toowoomba Catholic Social Justice Commission", "Pays": "Australie", "Role": "Indépendant·e", "Panel": "2, 6"},
+{"Nom": "Wangka", "Prénom": "Yusmiati Vistamika", "Arrivée": "", "HArr": "", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Oui", "Heberge": "Non", "Courriel": "vivi.wangka@gmail.com", "Institution": "Chercheuse et praticienne, spécialiste de la migration et de la justice de genre", "Pays": "Indonésie", "Role": "Chercheur·e", "Panel": "9"},
+{"Nom": "Zwetsch", "Prénom": "Roberto Ervino", "Arrivée": "30/07/2026", "HArr": "03:15", "Départ": "", "HDep": "", "FMTL": "Oui", "SoiMeme": "", "Presentation": "Non", "Heberge": "Oui", "Courriel": "rezwetsch@gmail.com", "Institution": "Professeur, Faculdades EST; Membre du CI du FMTL", "Pays": "Brésil", "Role": "Professeur·e", "Panel": "9"}
+];
+
+const VIEWS = {
+  tous: {
+    caption: `Vue d'ensemble — ${DATA.length} participants, toutes les colonnes.`,
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"Arrivée", label:"Arrivée"},
+      {key:"Départ", label:"Départ"},
+      {key:"FMTL", label:"Payé par FMTL", type:"pill"},
+      {key:"SoiMeme", label:"Payé par eux-mêmes", type:"pill"},
+      {key:"Presentation", label:"Présentation", type:"pill"},
+      {key:"Heberge", label:"Hébergement", type:"pill"},
+    ]
+  },
+  horaires: {
+    caption: "Dates et heures d'arrivée et de départ. Cases vides = date/heure non encore transmise.",
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"Arrivée", label:"Date d'arrivée"},
+      {key:"HArr", label:"Heure d'arrivée"},
+      {key:"Départ", label:"Date de départ"},
+      {key:"HDep", label:"Heure de départ"},
+    ]
+  },
+  finances: {
+    caption: "Qui prend en charge le voyage : le FMTL, ou le/la participant·e lui/elle-même.",
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"FMTL", label:"Payé par FMTL", type:"pill"},
+      {key:"SoiMeme", label:"Payé par eux-mêmes", type:"pill"},
+    ]
+  },
+  hebergement: {
+    caption: "Logement à la résidence Chant d'Oiseau.",
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"Heberge", label:"Hébergé à Chant d'Oiseau", type:"pill"},
+      {key:"Presentation", label:"Présentation en ligne", type:"pill"},
+    ]
+  },
+  profils: {
+    caption: "Institution, pays, panel et coordonnées de chaque participant·e.",
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"Institution", label:"Institution / Occupation"},
+      {key:"Pays", label:"Pays"},
+      {key:"Panel", label:"Panel"},
+      {key:"Role", label:"Rôle"},
+      {key:"Courriel", label:"Courriel"},
+    ]
+  },
+  autofinance: {
+    caption: "Participant·es qui financent eux-mêmes leur voyage (billets payés par eux-mêmes).",
+    filter: d => (d.SoiMeme || "").toLowerCase().startsWith("oui"),
+    cols: [
+      {key:"nom", label:"Participant"},
+      {key:"SoiMeme", label:"Payé par eux-mêmes", type:"pill"},
+      {key:"FMTL", label:"Payé par FMTL", type:"pill"},
+      {key:"Heberge", label:"Hébergement", type:"pill"},
+      {key:"Courriel", label:"Courriel"},
+    ]
+  }
+};
+
+let currentView = "tous";
+let searchTerm = "";
+
+function pillClass(val){
+  if(!val) return "autre";
+  const v = val.toLowerCase();
+  if(v.startsWith("oui")) return "oui";
+  if(v.startsWith("non")) return "non";
+  return "autre";
+}
+
+function renderStats(){
+  const total = DATA.length;
+  const fmtlFull = DATA.filter(d=>d.FMTL==="Oui").length;
+  const rooms = DATA.filter(d=>d.Heberge==="Oui").length;
+  const toConfirm = DATA.filter(d=>d.Heberge==="À confirmer").length;
+  const el = document.getElementById("stats");
+  el.innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl sans">Participants</div></div>
+    <div class="stat"><div class="num">${fmtlFull}</div><div class="lbl sans">Voyage payé FMTL</div></div>
+    <div class="stat"><div class="num">${rooms}</div><div class="lbl sans">Chambres — Chant d'Oiseau</div></div>
+    <div class="stat"><div class="num">${toConfirm}</div><div class="lbl sans">Hébergement à confirmer</div></div>
+  `;
+}
+
+function renderTable(){
+  const view = VIEWS[currentView];
+  document.getElementById("caption").textContent = view.caption;
+
+  const headRow = document.getElementById("headRow");
+  headRow.innerHTML = view.cols.map(c=>`<th>${c.label}</th>`).join("");
+
+  const term = searchTerm.trim().toLowerCase();
+  const base = view.filter ? DATA.filter(view.filter) : DATA;
+  const rows = base.filter(d => !term || (d.Nom+" "+d.Prénom).toLowerCase().includes(term));
+
+  const body = document.getElementById("bodyRows");
+  const emptyMsg = document.getElementById("emptyMsg");
+
+  if(rows.length === 0){
+    body.innerHTML = "";
+    emptyMsg.style.display = "block";
+    return;
+  }
+  emptyMsg.style.display = "none";
+
+  body.innerHTML = rows.map(d=>{
+    return "<tr>" + view.cols.map(c=>{
+      if(c.key === "nom"){
+        return `<td data-label="${c.label}"><span class="name">${d.Nom}</span> <span class="first">${d.Prénom}</span></td>`;
+      }
+      let val = d[c.key];
+      if(c.type === "pill"){
+        if(!val) return `<td data-label="${c.label}"><span class="muted-cell">—</span></td>`;
+        return `<td data-label="${c.label}"><span class="pill ${pillClass(val)}">${val}</span></td>`;
+      }
+      if(!val){
+        const fallback = (c.key === "Arrivée" || c.key === "Départ" || c.key === "HArr" || c.key === "HDep") ? "à confirmer" : "—";
+        return `<td data-label="${c.label}"><span class="muted-cell">${fallback}</span></td>`;
+      }
+      return `<td data-label="${c.label}">${val}</td>`;
+    }).join("") + "</tr>";
+  }).join("");
+}
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentView = btn.dataset.view;
+    renderTable();
+  });
+});
+
+document.getElementById("searchInput").addEventListener("input", (e)=>{
+  searchTerm = e.target.value;
+  renderTable();
+});
+
+renderStats();
+renderTable();
+</script>
+
+</body>
+</html>
